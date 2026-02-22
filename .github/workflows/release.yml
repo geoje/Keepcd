@@ -17,27 +17,25 @@ jobs:
         id: cache-chrome
         uses: actions/cache@v5
         with:
-          path: |
-            Binaries/chromedriver
-            Binaries/Google\ Chrome\ for\ Testing.app
+          path: $GITHUB_WORKSPACE/Binaries
           key: chrome-binaries-${{ env.CHROMEDRIVER_URL }}-${{ env.CHROME_URL }}
 
       - name: Download chromedriver
         if: steps.cache-chrome.outputs.cache-hit != 'true'
         run: |
-          mkdir -p Binaries
+          mkdir -p $GITHUB_WORKSPACE/Binaries
           curl -L -o chromedriver.zip "$CHROMEDRIVER_URL"
           unzip -o chromedriver.zip
-          mv chromedriver-mac-arm64/chromedriver Binaries/chromedriver
+          mv chromedriver-mac-arm64/chromedriver $GITHUB_WORKSPACE/Binaries/chromedriver
           rm -rf chromedriver.zip chromedriver-mac-arm64
 
       - name: Download Chrome
         if: steps.cache-chrome.outputs.cache-hit != 'true'
         run: |
-          mkdir -p Binaries
+          mkdir -p $GITHUB_WORKSPACE/Binaries
           curl -L -o chrome.zip "$CHROME_URL"
           unzip -o chrome.zip
-          mv chrome-mac-arm64/Google\ Chrome\ for\ Testing.app Binaries/Google\ Chrome\ for\ Testing.app
+          mv chrome-mac-arm64/Google\ Chrome\ for\ Testing.app $GITHUB_WORKSPACE/Binaries/Google\ Chrome\ for\ Testing.app
           rm -rf chrome.zip chrome-mac-arm64
 
       - name: Checkout code
@@ -66,29 +64,28 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      # The following steps are temporarily disabled for cache testing
-      # - name: Build Archive
-      #   run: |
-      #     xcodebuild archive \
-      #       -project Keep.xcodeproj \
-      #       -scheme Keep \
-      #       -configuration Release \
-      #       -archivePath .build/Keep.xcarchive \
-      #       -destination "generic/platform=macOS"
+      - name: Build Archive
+        run: |
+          xcodebuild archive \
+            -project Keep.xcodeproj \
+            -scheme Keep \
+            -configuration Release \
+            -archivePath .build/Keep.xcarchive \
+            -destination "generic/platform=macOS"
 
-      # - name: Export App and Re-sign
-      #   run: |
-      #     mkdir -p ./dist
-      #     cp -R ./.build/Keep.xcarchive/Products/Applications/Keep.app ./dist/Keep.app
+      - name: Export App and Re-sign
+        run: |
+          mkdir -p ./dist
+          cp -R ./.build/Keep.xcarchive/Products/Applications/Keep.app ./dist/Keep.app
 
-      #     # Force ad-hoc re-signing from widget to main app
-      #     codesign --force --deep --sign - ./dist/Keep.app/Contents/PlugIns/NoteWidgetsExtension.appex
-      #     codesign --force --deep --sign - ./dist/Keep.app
+          # Force ad-hoc re-signing from widget to main app
+          codesign --force --deep --sign - ./dist/Keep.app/Contents/PlugIns/NoteWidgetsExtension.appex
+          codesign --force --deep --sign - ./dist/Keep.app
 
-      # - name: Zip App
-      #   run: |
-      #     cd dist
-      #     zip -r ../Keep_MacOS_${{ steps.vars.outputs.MARKETING_VERSION }}.zip Keep.app
+      - name: Zip App
+        run: |
+          cd dist
+          zip -r ../Keep_MacOS_${{ steps.vars.outputs.MARKETING_VERSION }}.zip Keep.app
 
       # - name: Create Release
       #   uses: softprops/action-gh-release@v2
