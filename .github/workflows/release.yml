@@ -14,16 +14,14 @@ jobs:
 
     steps:
       - name: Cache Chrome binaries
-        id: chrome_cache
-        uses: actions/cache@v4
+        id: cache-chrome
+        uses: actions/cache@v5
         with:
-          path: |
-            Binaries/chromedriver
-            Binaries/Google Chrome for Testing.app
+          path: Binaries
           key: chrome-binaries-${{ env.CHROMEDRIVER_URL }}-${{ env.CHROME_URL }}
 
       - name: Download chromedriver
-        if: steps.chrome_cache.outputs.cache-hit != 'true'
+        if: steps.cache-chrome.outputs.cache-hit != 'true'
         run: |
           mkdir -p Binaries
           curl -L -o chromedriver.zip "$CHROMEDRIVER_URL"
@@ -32,22 +30,13 @@ jobs:
           rm -rf chromedriver.zip chromedriver-mac-arm64
 
       - name: Download Chrome
-        if: steps.chrome_cache.outputs.cache-hit != 'true'
+        if: steps.cache-chrome.outputs.cache-hit != 'true'
         run: |
           mkdir -p Binaries
           curl -L -o chrome.zip "$CHROME_URL"
           unzip -o chrome.zip
           mv chrome-mac-arm64/Google\ Chrome\ for\ Testing.app Binaries/Google\ Chrome\ for\ Testing.app
           rm -rf chrome.zip chrome-mac-arm64
-
-      - name: Save Chrome binaries to cache
-        if: steps.chrome_cache.outputs.cache-hit != 'true'
-        uses: actions/cache@v4
-        with:
-          path: |
-            Binaries/chromedriver
-            Binaries/Google Chrome for Testing.app
-          key: chrome-binaries-${{ env.CHROMEDRIVER_URL }}-${{ env.CHROME_URL }}
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -75,44 +64,45 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Build Archive
-        run: |
-          xcodebuild archive \
-            -project Keep.xcodeproj \
-            -scheme Keep \
-            -configuration Release \
-            -archivePath .build/Keep.xcarchive \
-            -destination "generic/platform=macOS"
+      # The following steps are temporarily disabled for cache testing
+      # - name: Build Archive
+      #   run: |
+      #     xcodebuild archive \
+      #       -project Keep.xcodeproj \
+      #       -scheme Keep \
+      #       -configuration Release \
+      #       -archivePath .build/Keep.xcarchive \
+      #       -destination "generic/platform=macOS"
 
-      - name: Export App and Re-sign
-        run: |
-          mkdir -p ./dist
-          cp -R ./.build/Keep.xcarchive/Products/Applications/Keep.app ./dist/Keep.app
+      # - name: Export App and Re-sign
+      #   run: |
+      #     mkdir -p ./dist
+      #     cp -R ./.build/Keep.xcarchive/Products/Applications/Keep.app ./dist/Keep.app
 
-          # Force ad-hoc re-signing from widget to main app
-          codesign --force --deep --sign - ./dist/Keep.app/Contents/PlugIns/NoteWidgetsExtension.appex
-          codesign --force --deep --sign - ./dist/Keep.app
+      #     # Force ad-hoc re-signing from widget to main app
+      #     codesign --force --deep --sign - ./dist/Keep.app/Contents/PlugIns/NoteWidgetsExtension.appex
+      #     codesign --force --deep --sign - ./dist/Keep.app
 
-      - name: Zip App
-        run: |
-          cd dist
-          zip -r ../Keep_MacOS_${{ steps.vars.outputs.MARKETING_VERSION }}.zip Keep.app
+      # - name: Zip App
+      #   run: |
+      #     cd dist
+      #     zip -r ../Keep_MacOS_${{ steps.vars.outputs.MARKETING_VERSION }}.zip Keep.app
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.vars.outputs.MARKETING_VERSION }}
-          name: Release ${{ steps.vars.outputs.MARKETING_VERSION }}
-          files: Keep_MacOS_${{ steps.vars.outputs.MARKETING_VERSION }}.zip
-          body: |
-            ## 🚀 New Build (${{ steps.vars.outputs.MARKETING_VERSION }})
+      # - name: Create Release
+      #   uses: softprops/action-gh-release@v2
+      #   with:
+      #     tag_name: ${{ steps.vars.outputs.MARKETING_VERSION }}
+      #     name: Release ${{ steps.vars.outputs.MARKETING_VERSION }}
+      #     files: Keep_MacOS_${{ steps.vars.outputs.MARKETING_VERSION }}.zip
+      #     body: |
+      #       ## 🚀 New Build (${{ steps.vars.outputs.MARKETING_VERSION }})
 
-            ### ⚠️ How to Run (Required)
-            This app is not notarized by Apple. After downloading, you must enter the following command in the terminal.
+      #       ### ⚠️ How to Run (Required)
+      #       This app is not notarized by Apple. After downloading, you must enter the following command in the terminal.
 
-            1. Move the app to the `/Applications` folder
-            2. Open the terminal and enter the following command:
-              `sudo xattr -rd com.apple.quarantine /Applications/Keep.app`
-            3. Right-click the app -> Select Open
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #       1. Move the app to the `/Applications` folder
+      #       2. Open the terminal and enter the following command:
+      #         `sudo xattr -rd com.apple.quarantine /Applications/Keep.app`
+      #       3. Right-click the app -> Select Open
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
