@@ -13,6 +13,9 @@ jobs:
       CHROME_URL: https://storage.googleapis.com/chrome-for-testing-public/145.0.7632.67/mac-arm64/chrome-mac-arm64.zip
 
     steps:
+      - name: Prepare Binaries folder
+        run: mkdir -p Binaries
+
       - name: Cache Chrome binaries
         id: cache-chrome
         uses: actions/cache@v5
@@ -23,7 +26,6 @@ jobs:
       - name: Download chromedriver
         if: steps.cache-chrome.outputs.cache-hit != 'true'
         run: |
-          mkdir -p Binaries
           curl -L -o chromedriver.zip "$CHROMEDRIVER_URL"
           unzip -o chromedriver.zip
           mv chromedriver-mac-arm64/chromedriver Binaries/chromedriver
@@ -32,7 +34,6 @@ jobs:
       - name: Download Chrome
         if: steps.cache-chrome.outputs.cache-hit != 'true'
         run: |
-          mkdir -p Binaries
           curl -L -o chrome.zip "$CHROME_URL"
           unzip -o chrome.zip
           mv chrome-mac-arm64/Google\ Chrome\ for\ Testing.app Binaries/Google\ Chrome\ for\ Testing.app
