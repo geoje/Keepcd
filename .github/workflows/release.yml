@@ -1,0 +1,71 @@
+name: Build and Release
+
+on:
+  workflow_dispatch: # Manual execution by pressing the button
+
+jobs:
+  build:
+    runs-on: macos-15 # Use the latest Xcode environment
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set Version and Tag
+        id: vars
+        run: |
+          DATE=$(date +'%Y%m%d')
+          RUN_NUMBER=${{ github.run_number }}
+          TAG_NAME="v${DATE}.${RUN_NUMBER}"
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "Build Tag: $TAG_NAME"
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.app # Check the version suitable for the environment
+
+      - name: Build Archive
+        run: |
+          xcodebuild archive \
+            -project Keep.xcodeproj \
+            -scheme Keep \
+            -configuration Release \
+            -archivePath ./build/Keep.xcarchive \
+            CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="-" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
+
+      - name: Export App and Re-sign
+        run: |
+          mkdir -p ./dist
+          cp -R ./build/Keep.xcarchive/Products/Applications/Keep.app ./dist/Keep.app
+
+          # Force ad-hoc re-signing from widget to main app
+          codesign --force --deep --sign - ./dist/Keep.app/Contents/PlugIns/NoteWidgetsExtension.appex
+          codesign --force --deep --sign - ./dist/Keep.app
+
+      - name: Zip App
+        run: |
+          cd dist
+          zip -r ../Keep_MacOS_${{ steps.vars.outputs.TAG_NAME }}.zip Keep.app
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.vars.outputs.TAG_NAME }}
+          name: Release ${{ steps.vars.outputs.TAG_NAME }}
+          files: Keep_MacOS_${{ steps.vars.outputs.TAG_NAME }}.zip
+          body: |
+            ## 🚀 New Build (${{ steps.vars.outputs.TAG_NAME }})
+
+            ### ⚠️ How to Run (Required)
+            This app is not notarized by Apple. After downloading, you must enter the following command in the terminal.
+
+            1. Move the app to the `/Applications` folder
+            2. Open the terminal and enter the following command:
+              `sudo xattr -rd com.apple.quarantine /Applications/Keep.app`
+            3. Right-click the app -> Select Open
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
