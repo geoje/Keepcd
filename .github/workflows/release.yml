@@ -10,6 +10,32 @@ jobs:
       contents: write
 
     steps:
+      - name: Cache Chrome binaries
+        uses: actions/cache@v4
+        with:
+          path: |
+            Binaries/chromedriver
+            Binaries/Google Chrome for Testing.app
+          key: chrome-binaries-${{ hashFiles('chromedriver.url', 'chrome.url') }}
+
+      - name: Download chromedriver
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p Binaries
+          curl -L -o chromedriver.zip https://storage.googleapis.com/chrome-for-testing-public/145.0.7632.67/mac-arm64/chromedriver-mac-arm64.zip
+          unzip -o chromedriver.zip
+          mv chromedriver-mac-arm64/chromedriver Binaries/chromedriver
+          rm -rf chromedriver.zip chromedriver-mac-arm64
+
+      - name: Download Google Chrome for Testing.app
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p Binaries
+          curl -L -o chrome.zip https://storage.googleapis.com/chrome-for-testing-public/145.0.7632.67/mac-arm64/chrome-mac-arm64.zip
+          unzip -o chrome.zip
+          mv chrome-mac-arm64/Google\ Chrome\ for\ Testing.app Binaries/Google\ Chrome\ for\ Testing.app
+          rm -rf chrome.zip chrome-mac-arm64
+
       - name: Checkout code
         uses: actions/checkout@v4
 
