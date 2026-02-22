@@ -5,36 +5,49 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15 # Use the latest Xcode environment
+    runs-on: macos-latest
     permissions:
       contents: write
+    env:
+      CHROMEDRIVER_URL: https://storage.googleapis.com/chrome-for-testing-public/145.0.7632.67/mac-arm64/chromedriver-mac-arm64.zip
+      CHROME_URL: https://storage.googleapis.com/chrome-for-testing-public/145.0.7632.67/mac-arm64/chrome-mac-arm64.zip
 
     steps:
       - name: Cache Chrome binaries
+        id: chrome_cache
         uses: actions/cache@v4
         with:
           path: |
             Binaries/chromedriver
             Binaries/Google Chrome for Testing.app
-          key: chrome-binaries-${{ hashFiles('chromedriver.url', 'chrome.url') }}
+          key: chrome-binaries-${{ env.CHROMEDRIVER_URL }}-${{ env.CHROME_URL }}
 
       - name: Download chromedriver
-        if: steps.cache.outputs.cache-hit != 'true'
+        if: steps.chrome_cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p Binaries
-          curl -L -o chromedriver.zip https://storage.googleapis.com/chrome-for-testing-public/145.0.7632.67/mac-arm64/chromedriver-mac-arm64.zip
+          curl -L -o chromedriver.zip "$CHROMEDRIVER_URL"
           unzip -o chromedriver.zip
           mv chromedriver-mac-arm64/chromedriver Binaries/chromedriver
           rm -rf chromedriver.zip chromedriver-mac-arm64
 
       - name: Download Chrome
-        if: steps.cache.outputs.cache-hit != 'true'
+        if: steps.chrome_cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p Binaries
-          curl -L -o chrome.zip https://storage.googleapis.com/chrome-for-testing-public/145.0.7632.67/mac-arm64/chrome-mac-arm64.zip
+          curl -L -o chrome.zip "$CHROME_URL"
           unzip -o chrome.zip
           mv chrome-mac-arm64/Google\ Chrome\ for\ Testing.app Binaries/Google\ Chrome\ for\ Testing.app
           rm -rf chrome.zip chrome-mac-arm64
+
+      - name: Save Chrome binaries to cache
+        if: steps.chrome_cache.outputs.cache-hit != 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            Binaries/chromedriver
+            Binaries/Google Chrome for Testing.app
+          key: chrome-binaries-${{ env.CHROMEDRIVER_URL }}-${{ env.CHROME_URL }}
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -42,21 +55,19 @@ jobs:
       - name: Set version variables
         id: vars
         run: |
-          MARKETING_VERSION=$(date +'%y.%-m').${{ github.run_number }}
-          CURRENT_PROJECT_VERSION=$(date +'%Y%m%d').${{ github.run_number }}
-          echo "MARKETING_VERSION=$MARKETING_VERSION" >> $GITHUB_OUTPUT
-          echo "CURRENT_PROJECT_VERSION=$CURRENT_PROJECT_VERSION" >> $GITHUB_OUTPUT
-          echo "Marketing Version: $MARKETING_VERSION"
-          echo "Current Project Version: $CURRENT_PROJECT_VERSION"
+          echo "MARKETING_VERSION=$(date +'%y.%-m').${{ github.run_number }}" >> $GITHUB_OUTPUT
+          echo "CURRENT_PROJECT_VERSION=$(date +'%Y%m%d').${{ github.run_number }}" >> $GITHUB_OUTPUT
+          echo "Marketing Version: ${{ steps.vars.outputs.MARKETING_VERSION }}"
+          echo "Current Project Version: ${{ steps.vars.outputs.CURRENT_PROJECT_VERSION }}"
 
       - name: Update project versions
         run: |
-          sed -i '' "s/MARKETING_VERSION = [^;]*/MARKETING_VERSION = $MARKETING_VERSION/" Keep.xcodeproj/project.pbxproj
-          sed -i '' "s/CURRENT_PROJECT_VERSION = [^;]*/CURRENT_PROJECT_VERSION = $CURRENT_PROJECT_VERSION/" Keep.xcodeproj/project.pbxproj
+          sed -i '' "s/MARKETING_VERSION = [^;]*/MARKETING_VERSION = ${{ steps.vars.outputs.MARKETING_VERSION }}/" Keep.xcodeproj/project.pbxproj
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [^;]*/CURRENT_PROJECT_VERSION = ${{ steps.vars.outputs.CURRENT_PROJECT_VERSION }}/" Keep.xcodeproj/project.pbxproj
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add Keep.xcodeproj/project.pbxproj
-          git commit -m "chore: update version to $MARKETING_VERSION ($CURRENT_PROJECT_VERSION)" || echo "No changes to commit"
+          git commit -m "update version to ${{ steps.vars.outputs.MARKETING_VERSION }} (${{ steps.vars.outputs.CURRENT_PROJECT_VERSION }})" || echo "no changes to commit"
           git push origin main
 
       - name: Select Xcode
