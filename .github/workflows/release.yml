@@ -1,7 +1,7 @@
-name: Build and Release
+name: Release
 
 on:
-  workflow_dispatch: # Manual execution by pressing the button
+  workflow_dispatch:
 
 jobs:
   build:
@@ -9,37 +9,36 @@ jobs:
     permissions:
       contents: write
     env:
-      CHROMEDRIVER_URL: https://storage.googleapis.com/chrome-for-testing-public/145.0.7632.67/mac-arm64/chromedriver-mac-arm64.zip
-      CHROME_URL: https://storage.googleapis.com/chrome-for-testing-public/145.0.7632.67/mac-arm64/chrome-mac-arm64.zip
+      CHROME_VERSION: 145.0.7632.67
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Cache Chrome binaries
         id: cache-chrome
         uses: actions/cache@v5
         with:
-          path: $GITHUB_WORKSPACE/Binaries
-          key: chrome-binaries-${{ env.CHROMEDRIVER_URL }}-${{ env.CHROME_URL }}
+          path: Binaries
+          key: ${{ runner.os }}-chrome-${{ env.CHROME_VERSION }}
 
       - name: Download chromedriver
         if: steps.cache-chrome.outputs.cache-hit != 'true'
         run: |
-          mkdir -p $GITHUB_WORKSPACE/Binaries
-          curl -L -o chromedriver.zip "$CHROMEDRIVER_URL"
+          mkdir -p Binaries
+          curl -L -o chromedriver.zip "https://storage.googleapis.com/chrome-for-testing-public/${{ env.CHROME_VERSION }}/mac-arm64/chromedriver-mac-arm64.zip"
           unzip -o chromedriver.zip
-          mv chromedriver-mac-arm64/chromedriver $GITHUB_WORKSPACE/Binaries/chromedriver
+          mv chromedriver-mac-arm64/chromedriver Binaries/chromedriver
           rm -rf chromedriver.zip chromedriver-mac-arm64
 
       - name: Download Chrome
         if: steps.cache-chrome.outputs.cache-hit != 'true'
         run: |
-          mkdir -p $GITHUB_WORKSPACE/Binaries
-          curl -L -o chrome.zip "$CHROME_URL"
+          mkdir -p Binaries
+          curl -L -o chrome.zip "https://storage.googleapis.com/chrome-for-testing-public/${{ env.CHROME_VERSION }}/mac-arm64/chrome-mac-arm64.zip"
           unzip -o chrome.zip
-          mv chrome-mac-arm64/Google\ Chrome\ for\ Testing.app $GITHUB_WORKSPACE/Binaries/Google\ Chrome\ for\ Testing.app
+          mv chrome-mac-arm64/Google\ Chrome\ for\ Testing.app Binaries/Google\ Chrome\ for\ Testing.app
           rm -rf chrome.zip chrome-mac-arm64
-
-      - name: Checkout code
-        uses: actions/checkout@v4
 
       - name: Set version variables
         id: vars
