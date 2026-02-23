@@ -92,31 +92,31 @@ jobs:
           codesign --force --deep --sign - Keep.app
           zip -r "$GITHUB_WORKSPACE/Keep.zip" Keep.app
 
-      - name: Generate Sparkle Appcast
-        env:
-          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
-        run: |
-          echo ${{ secrets.SPARKLE_PRIVATE_KEY }} > ed25519_key.p8
-          ./Binaries/generate_appcast $GITHUB_WORKSPACE -skip-signing-check --ed-key-file ed25519_key.p8
-          rm ed25519_key.p8
+      # - name: Generate Sparkle Appcast
+      #   env:
+      #     SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+      #   run: |
+      #     echo ${{ secrets.SPARKLE_PRIVATE_KEY }} > ed25519_key.p8
+      #     ./Binaries/generate_appcast $GITHUB_WORKSPACE --ed-key-file ed25519_key.p8 -skip-signing-check
+      #     rm ed25519_key.p8
 
-      - name: Push version update
-        run: |
-          git push origin main
+      # - name: Push version update
+      #   run: |
+      #     git push origin main
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.vars.outputs.MARKETING_VERSION }}
-          name: Keep ${{ steps.vars.outputs.MARKETING_VERSION }}
-          files: |
-            Keep.zip
-            appcast.xml
-          body: |
-            ## What's New
-            - None
+      # - name: Create Release
+      #   uses: softprops/action-gh-release@v2
+      #   with:
+      #     tag_name: ${{ steps.vars.outputs.MARKETING_VERSION }}
+      #     name: Keep ${{ steps.vars.outputs.MARKETING_VERSION }}
+      #     files: |
+      #       Keep.zip
+      #       appcast.xml
+      #     body: |
+      #       ## What's New
+      #       - None
 
-            ## Bug Fixes
-            - None
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #       ## Bug Fixes
+      #       - None
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
