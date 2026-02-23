@@ -27,7 +27,8 @@ jobs:
         if: steps.cache-chrome.outputs.cache-hit != 'true'
         run: |
           mkdir -p Binaries
-          curl -L -o chromedriver.zip "https://storage.googleapis.com/chrome-for-testing-public/${{ env.CHROME_VERSION }}/mac-arm64/chromedriver-mac-arm64.zip"
+          curl -L -o chromedriver.zip \
+            "https://storage.googleapis.com/chrome-for-testing-public/${{ env.CHROME_VERSION }}/mac-arm64/chromedriver-mac-arm64.zip"
           unzip -o chromedriver.zip
           mv chromedriver-mac-arm64/chromedriver Binaries/chromedriver
           rm -rf chromedriver.zip chromedriver-mac-arm64
@@ -36,7 +37,8 @@ jobs:
         if: steps.cache-chrome.outputs.cache-hit != 'true'
         run: |
           mkdir -p Binaries
-          curl -L -o chrome.zip "https://storage.googleapis.com/chrome-for-testing-public/${{ env.CHROME_VERSION }}/mac-arm64/chrome-mac-arm64.zip"
+          curl -L -o chrome.zip \
+            "https://storage.googleapis.com/chrome-for-testing-public/${{ env.CHROME_VERSION }}/mac-arm64/chrome-mac-arm64.zip"
           unzip -o chrome.zip
           mv chrome-mac-arm64/Google\ Chrome\ for\ Testing.app Binaries/Google\ Chrome\ for\ Testing.app
           rm -rf chrome.zip chrome-mac-arm64
@@ -44,7 +46,8 @@ jobs:
       - name: Download Sparkle
         if: steps.cache-chrome.outputs.cache-hit != 'true'
         run: |
-          curl -L -o sparkle.tar.xz https://github.com/sparkle-project/Sparkle/releases/download/${{ env.SPARKLE_VERSION }}/Sparkle-${{ env.SPARKLE_VERSION }}.tar.xz
+          curl -L -o sparkle.tar.xz \
+            https://github.com/sparkle-project/Sparkle/releases/download/${{ env.SPARKLE_VERSION }}/Sparkle-${{ env.SPARKLE_VERSION }}.tar.xz
           tar -xf sparkle.tar.xz bin/generate_appcast
           mv bin/generate_appcast Binaries/generate_appcast
           rm -rf sparkle.tar.xz bin
@@ -54,7 +57,8 @@ jobs:
         run: |
           YEAR_MONTH=$(date +'%y.%-m')
           RUN_NUMBER=${{ github.run_number }}
-          PBXPROJ_VERSION=$(grep -m1 'MARKETING_VERSION =' Keep.xcodeproj/project.pbxproj | sed 's/.*MARKETING_VERSION = \([0-9]*\.[0-9]*\.[0-9]*\);/\1/')
+          PBXPROJ_VERSION=$(grep -m1 'MARKETING_VERSION =' Keep.xcodeproj/project.pbxproj \
+            | sed 's/.*MARKETING_VERSION = \([0-9]*\.[0-9]*\.[0-9]*\);/\1/')
           PBXPROJ_YEAR_MONTH=$(echo "$PBXPROJ_VERSION" | cut -d. -f1-2)
           PBXPROJ_PATCH=$(echo "$PBXPROJ_VERSION" | cut -d. -f3)
           MARKETING_VERSION=$( [ "$YEAR_MONTH" = "$PBXPROJ_YEAR_MONTH" ] && echo "$YEAR_MONTH.$((PBXPROJ_PATCH + 1))" || echo "$YEAR_MONTH.0" )
@@ -64,8 +68,12 @@ jobs:
 
       - name: Update project versions
         run: |
-          sed -i '' "s/MARKETING_VERSION = [^;]*/MARKETING_VERSION = ${{ steps.vars.outputs.MARKETING_VERSION }}/" Keep.xcodeproj/project.pbxproj
-          sed -i '' "s/CURRENT_PROJECT_VERSION = [^;]*/CURRENT_PROJECT_VERSION = ${{ steps.vars.outputs.CURRENT_PROJECT_VERSION }}/" Keep.xcodeproj/project.pbxproj
+          sed -i '' \
+            "s/MARKETING_VERSION = [^;]*/MARKETING_VERSION = ${{ steps.vars.outputs.MARKETING_VERSION }}/" \
+            Keep.xcodeproj/project.pbxproj
+          sed -i '' \
+            "s/CURRENT_PROJECT_VERSION = [^;]*/CURRENT_PROJECT_VERSION = ${{ steps.vars.outputs.CURRENT_PROJECT_VERSION }}/" \
+            Keep.xcodeproj/project.pbxproj
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add Keep.xcodeproj/project.pbxproj
@@ -96,9 +104,11 @@ jobs:
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
-          echo ${{ secrets.SPARKLE_PRIVATE_KEY }} > ed25519_key.p8
-          ./Binaries/generate_appcast $GITHUB_WORKSPACE --ed-key-file ed25519_key.p8 -skip-signing-check
-          rm ed25519_key.p8
+          echo ${{ secrets.SPARKLE_PRIVATE_KEY }} | \
+            ./Binaries/generate_appcast \
+              $GITHUB_WORKSPACE \
+              --disable-signing-warning \
+              --ed-key-file -
 
       - name: Push version update
         run: |
