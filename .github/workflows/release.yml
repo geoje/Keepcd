@@ -97,7 +97,7 @@ jobs:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
           echo ${{ secrets.SPARKLE_PRIVATE_KEY }} > ed25519_key.p8
-          ./Binaries/generate_appcast . --ed-key-file ed25519_key.p8
+          ./Binaries/generate_appcast --ed-key-file ed25519_key.p8
           rm ed25519_key.p8
 
       - name: Push version update
