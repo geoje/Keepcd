@@ -455,7 +455,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14;
-				MARKETING_VERSION = 26.2.10;
+				MARKETING_VERSION = 26.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = kr.ygh.keep;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -498,7 +498,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14;
-				MARKETING_VERSION = 26.2.10;
+				MARKETING_VERSION = 26.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = kr.ygh.keep;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -551,7 +551,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14;
-				MARKETING_VERSION = 26.2.10;
+				MARKETING_VERSION = 26.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = kr.ygh.keep.NoteWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -605,7 +605,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14;
-				MARKETING_VERSION = 26.2.10;
+				MARKETING_VERSION = 26.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = kr.ygh.keep.NoteWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
