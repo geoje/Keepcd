@@ -13,7 +13,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Cache Chrome binaries
         id: cache-chrome
@@ -43,10 +43,15 @@ jobs:
       - name: Set version variables
         id: vars
         run: |
-          echo "MARKETING_VERSION=$(date +'%y.%-m').${{ github.run_number }}" >> $GITHUB_OUTPUT
-          echo "CURRENT_PROJECT_VERSION=$(date +'%Y%m%d').${{ github.run_number }}" >> $GITHUB_OUTPUT
-          echo "Marketing Version: ${{ steps.vars.outputs.MARKETING_VERSION }}"
-          echo "Current Project Version: ${{ steps.vars.outputs.CURRENT_PROJECT_VERSION }}"
+          YEAR_MONTH=$(date +'%y.%-m')
+          RUN_NUMBER=${{ github.run_number }}
+          PBXPROJ_VERSION=$(grep -m1 'MARKETING_VERSION =' Keep.xcodeproj/project.pbxproj | sed 's/.*MARKETING_VERSION = \([0-9]*\.[0-9]*\.[0-9]*\);/\1/')
+          PBXPROJ_YEAR_MONTH=$(echo "$PBXPROJ_VERSION" | cut -d. -f1-2)
+          PBXPROJ_PATCH=$(echo "$PBXPROJ_VERSION" | cut -d. -f3)
+          MARKETING_VERSION=$( [ "$YEAR_MONTH" = "$PBXPROJ_YEAR_MONTH" ] && echo "$YEAR_MONTH.$((PBXPROJ_PATCH + 1))" || echo "$YEAR_MONTH.0" )
+          CURRENT_PROJECT_VERSION=$(date +'%Y%m%d').${{ github.run_number }}
+          echo "MARKETING_VERSION=$MARKETING_VERSION" >> $GITHUB_OUTPUT
+          echo "CURRENT_PROJECT_VERSION=$CURRENT_PROJECT_VERSION" >> $GITHUB_OUTPUT
 
       - name: Update project versions
         run: |
@@ -74,33 +79,22 @@ jobs:
 
       - name: Export App and Re-sign
         run: |
-          mkdir -p ./dist
-          cp -R ./.build/Keep.xcarchive/Products/Applications/Keep.app ./dist/Keep.app
+          cd .build/Keep.xcarchive/Products/Applications
+          codesign --force --deep --sign - Keep.app/Contents/PlugIns/NoteWidgetsExtension.appex
+          codesign --force --deep --sign - Keep.app
+          zip -r "$GITHUB_WORKSPACE/Keep.zip" Keep.app
 
-          # Force ad-hoc re-signing from widget to main app
-          codesign --force --deep --sign - ./dist/Keep.app/Contents/PlugIns/NoteWidgetsExtension.appex
-          codesign --force --deep --sign - ./dist/Keep.app
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.vars.outputs.MARKETING_VERSION }}
+          name: Keep ${{ steps.vars.outputs.MARKETING_VERSION }}
+          files: Keep.zip
+          body: |
+            ## What's New
+            - None
 
-      - name: Zip App
-        run: |
-          cd dist
-          zip -r ../Keep_MacOS_${{ steps.vars.outputs.MARKETING_VERSION }}.zip Keep.app
-
-      # - name: Create Release
-      #   uses: softprops/action-gh-release@v2
-      #   with:
-      #     tag_name: ${{ steps.vars.outputs.MARKETING_VERSION }}
-      #     name: Release ${{ steps.vars.outputs.MARKETING_VERSION }}
-      #     files: Keep_MacOS_${{ steps.vars.outputs.MARKETING_VERSION }}.zip
-      #     body: |
-      #       ## 🚀 New Build (${{ steps.vars.outputs.MARKETING_VERSION }})
-
-      #       ### ⚠️ How to Run (Required)
-      #       This app is not notarized by Apple. After downloading, you must enter the following command in the terminal.
-
-      #       1. Move the app to the `/Applications` folder
-      #       2. Open the terminal and enter the following command:
-      #         `sudo xattr -rd com.apple.quarantine /Applications/Keep.app`
-      #       3. Right-click the app -> Select Open
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            ## Bug Fixes
+            - None
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
