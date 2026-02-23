@@ -98,7 +98,7 @@ jobs:
           cd .build/Keep.xcarchive/Products/Applications
           codesign --force --deep --sign - Keep.app/Contents/PlugIns/NoteWidgetsExtension.appex
           codesign --force --deep --sign - Keep.app
-          zip -r "$GITHUB_WORKSPACE/Keep.zip" Keep.app
+          zip -ry "$GITHUB_WORKSPACE/Keep.zip" Keep.app
 
       - name: Generate Sparkle Appcast
         env:
