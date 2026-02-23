@@ -10,6 +10,7 @@ jobs:
       contents: write
     env:
       CHROME_VERSION: 145.0.7632.67
+      SPARKLE_VERSION: 2.9.0
 
     steps:
       - name: Checkout code
@@ -20,7 +21,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: Binaries
-          key: ${{ runner.os }}-chrome-${{ env.CHROME_VERSION }}
+          key: ${{ runner.os }}-chrome-${{ env.CHROME_VERSION }}-sparkle-${{ env.SPARKLE_VERSION }}
 
       - name: Download chromedriver
         if: steps.cache-chrome.outputs.cache-hit != 'true'
@@ -39,6 +40,14 @@ jobs:
           unzip -o chrome.zip
           mv chrome-mac-arm64/Google\ Chrome\ for\ Testing.app Binaries/Google\ Chrome\ for\ Testing.app
           rm -rf chrome.zip chrome-mac-arm64
+
+      - name: Download Sparkle
+        if: steps.cache-chrome.outputs.cache-hit != 'true'
+        run: |
+          curl -L -o sparkle.tar.xz https://github.com/sparkle-project/Sparkle/releases/download/${{ env.SPARKLE_VERSION }}/Sparkle-${{ env.SPARKLE_VERSION }}.tar.xz
+          tar -xf sparkle.tar.xz bin/generate_appcast
+          mv bin/generate_appcast Binaries/generate_appcast
+          rm -rf sparkle.tar.xz bin
 
       - name: Set version variables
         id: vars
@@ -83,6 +92,14 @@ jobs:
           codesign --force --deep --sign - Keep.app
           zip -r "$GITHUB_WORKSPACE/Keep.zip" Keep.app
 
+      - name: Generate Sparkle Appcast
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          echo ${{ secrets.SPARKLE_PRIVATE_KEY }} > ed25519_key.p8
+          ./Binaries/generate_appcast . --ed-key-file ed25519_key.p8
+          rm ed25519_key.p8
+
       - name: Push version update
         run: |
           git push origin main
@@ -92,7 +109,9 @@ jobs:
         with:
           tag_name: ${{ steps.vars.outputs.MARKETING_VERSION }}
           name: Keep ${{ steps.vars.outputs.MARKETING_VERSION }}
-          files: Keep.zip
+          files: |
+            Keep.zip
+            appcast.xml
           body: |
             ## What's New
             - None
