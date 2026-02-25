@@ -96,8 +96,8 @@ jobs:
       - name: Export App and Re-sign
         run: |
           cd .build/Keep.xcarchive/Products/Applications
-          codesign --force --sign - runtime Keep.app/Contents/PlugIns/NoteWidgetsExtension.appex
-          codesign --force --sign - runtime Keep.app
+          codesign --force --sign - --options runtime Keep.app/Contents/PlugIns/NoteWidgetsExtension.appex
+          codesign --force --sign - --options runtime Keep.app
           zip -ry "$GITHUB_WORKSPACE/Keep.zip" Keep.app
 
       - name: Generate Sparkle Appcast
