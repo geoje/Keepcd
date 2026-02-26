@@ -93,10 +93,12 @@ jobs:
             -archivePath .build/Keep.xcarchive \
             -destination "generic/platform=macOS"
 
-      - name: Export App
+      - name: Export App and Re-sign
         run: |
-          zip -ry $GITHUB_WORKSPACE/Keep.zip \
-            .build/Keep.xcarchive/Products/Applications/Keep.app
+          cd .build/Keep.xcarchive/Products/Applications
+          codesign --force --sign - Keep.app/Contents/PlugIns/NoteWidgetsExtension.appex
+          codesign --force --sign - Keep.app
+          zip -ry "$GITHUB_WORKSPACE/Keep.zip" Keep.app
 
       - name: Generate Sparkle Appcast
         env:
