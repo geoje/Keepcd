@@ -95,7 +95,8 @@ jobs:
 
       - name: Export App
         run: |
-          zip -ry Keep.zip .build/Keep.xcarchive/Products/Applications/Keep.app
+          zip -ry $GITHUB_WORKSPACE/Keep.zip \
+            .build/Keep.xcarchive/Products/Applications/Keep.app
 
       - name: Generate Sparkle Appcast
         env:
